@@ -1,0 +1,1670 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+        <title>ofg_game</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+         body{background-color: #ddd;}
+
+</style> 
+</head>
+<body>
+ロードするゲームのファイル名（半角英数のみ30文字以内）<input type="text" id="filename" size="10" maxlength="30"><input type="button" value="読み込み" onclick="filenamejudge('load');"/> ルームナンバー<input type="text" id="groupname" size="10" maxlength="30"><input type="button" value="参加" onclick="filenamejudge('join');"/><input type="button" value="💀" onclick="test();"/>
+<div class="canvasvind" style="position: relative;">//レイヤーを束ねたつもり
+<canvas id="view" width ="1300px" height = "600px" style="position: absolute; left: 0; top: 0; z-index: 0;  background-color: #fff;"></canvas>//下レイヤー
+<canvas id="druggview" width ="1300px" height = "600px" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>//上レイヤー
+</div>
+<script src="socket.io/socket.io.js"></script>
+<script type="text/javascript">
+var socket =io.connect();
+var canvas=document.getElementById('view');//下レイヤー
+var ctx=canvas.getContext('2d');
+var canvas2=document.getElementById('druggview');//上レイヤー
+var ctx2=canvas2.getContext('2d');
+
+var mode="null";
+var drugg=false;
+var aka=new Array(0);//1種類目のピースオブジェクトのインスタンスが生成される度にこの配列へ格納
+var akanum=0;//1種類目のピースオブジェクト数と共に増える。インデックス番号に使えるが[0]のオブジェクトが1つ存在するときに呼び出したakanumは1である
+var newaka=new Array(0);//ロードするときの？
+var newakanum=0;
+var goal=new Array(0);//
+var goalnum=0;
+var newgoal=new Array(0);//ロードするときの？
+var newgoalnum=0;
+var player=new Array(0);//
+var playernum=0;
+var newplayer=new Array(0);//ロードするときの？
+var newplayernum=0;
+
+var ao=new Array(0);//
+var aonum=0;
+var newao=new Array(0);//ロードするときの？
+var newaornum=0;
+
+
+var holdimage="";
+var toolmode="null";
+var loadnext=0;
+var loadcancel=false;
+var groupname;
+var joinflag=false;
+var hold=0;
+var flag=true;
+var jflag=false;
+var mflag=true;
+var druggcount=false;
+var mouseuped=false;
+var finx=0;
+var finy=0;
+var lastx=0;
+var lasty=0;
+var nextdrugg=null;
+var json=[];
+var njson;
+var dblcanx=0;
+var dblcany=0;
+var objwid=25;
+var objhei=25;
+var beforedruggx=0;
+var beforedruggy=0;
+var collisioncount=0;
+var leftpress=false;
+var rightpress=false;
+var uppress=false;
+var downpress=false;
+var wpress=false;
+var filename="";
+var loadgame=false;
+document.addEventListener("keydown",keyDownHandler);
+document.addEventListener("keyup",keyUpHandler);
+
+
+
+var gamegroupflag=new Array(0);
+var gameloadedarray=new Array(0);
+
+var c3=false;
+var c2=false;
+var c1=false;
+var cgo=false;
+var sitax=215;
+var sitay=130;
+var sitanum=1;
+var membernum;
+var inpnum=null;
+var pnum=null;
+var login=false;
+var alogin=false;
+var zlogin=false;
+var pselect=false;
+var pone=false;
+var ptwo=false;
+var pthree=false;
+var pfour=false;
+
+var pselemessage=new Image();
+var sita=new Image();
+var psele=new Image();
+var psele2=new Image();
+var image0=new Image(); 
+var count0=new Image(); 
+var count4=new Image(); 
+var count3=new Image(); 
+var count2=new Image(); 
+var count1=new Image(); 
+var go=new Image(); 
+pselemessage.src="./pselemessage.png";
+sita.src="./sita.png";
+psele.src="./psele.png";
+psele2.src="./psele2.png";
+count0.src="./0.png";
+count4.src="./4.png";
+count3.src="./3.png";
+count2.src="./2.png";
+count1.src="./1.png";
+go.src="./go.png";
+image0.src="./logintime.png";
+
+
+
+
+
+
+
+
+
+
+
+function test(){
+	socket.emit("test",socket.id);
+}
+socket.on("test",function(id){
+	if(id==socket.id){
+console.log("id"+id+"sid"+socket.id);
+console.log("id"+id+"room"+groupname);
+	}
+});
+
+socket.on("confirm",function(timenum){
+console.log("disconnect");
+if(pnum==1){
+	socket.emit("confirm",groupname,timenum);
+}
+});
+
+
+
+function keyDownHandler(e) {
+
+
+
+	if(alogin==false){
+		if(pnum!=1){
+		//if(loadgame==false){
+			//socket.emit("fnameorder");
+			//}
+			
+			
+				if(joinflag==true){
+				socket.emit("memb",groupname);
+				
+			}
+		}
+		
+		
+		if(e.keyCode == 37) {
+			sitanum-=1
+			if(sitanum==0){
+				sitanum=4;
+			}
+        }
+        
+		if(e.keyCode == 39) {
+			rightpressed = true; 
+			sitanum+=1;          
+        }
+   
+		sitanum%=4;
+		if(sitanum==0){
+			sitanum=4;
+		}
+
+		switch(sitanum){
+			case 1:
+			sitax=215;
+			break;
+
+			case 2:
+			sitax=280;
+			break;
+
+			case 3:
+			sitax=345;
+			break;
+
+			case 4:
+			sitax=410;
+			break;
+		}
+		if(e.keyCode == 13) {
+	
+			enterpressed = true; 
+
+
+	if(loadgame==true){
+			if(pone==false&&sitanum==1){
+				if(joinflag!=true){
+				socket.emit("getgroup",socket.id);
+				pnum=1;
+				pone=true;
+				pselect=true;
+				}
+			}
+			
+			else if(pnum==1){
+			if(gamegroupflag[1]!=true){
+				membernum=sitanum;
+				//console.log(membernum+"kotei");
+				memberselect=true;
+				socket.emit("floadorder",njson,groupname);
+				socket.emit("mlimitorder",groupname,membernum);
+				socket.emit("login",pnum,membernum,groupname);//ログイン処理をserver.jsに求める
+				zlogin=true;
+				}
+			}
+			else if(gamegroupflag[2]!=true&&sitanum==2&&membernum>=2){
+				pnum=2;
+				ptwo=true;
+				pselect=true;
+				
+				socket.emit("login",pnum,membernum,groupname);//ログイン処理をserver.jsに求める
+				zlogin=true;
+			}
+			else if(gamegroupflag[3]!=true&&sitanum==3&&membernum>=3){
+				pnum=3;
+				pthree=true;
+				pselect=true;
+				
+				socket.emit("login",pnum,membernum,groupname);//ログイン処理をserver.jsに求める
+				zlogin=true;
+			}
+			else if(gamegroupflag[4]!=true&&sitanum==4&&membernum>=4){
+				pnum=4;
+				pfour=true;
+				pselect=true;
+			
+				socket.emit("login",pnum,membernum,groupname);//ログイン処理をserver.jsに求める
+				zlogin=true;
+			}
+}
+        
+ 		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(toolmode=="testplay"){//toolmode
+//player[0].controlhandler(e);//全体のハンドラで受け取ったeを個々のインスタンスの関数で使える
+if(e.keyCode == 37) {
+leftpress=true;
+	}
+if(e.keyCode == 39) {
+rightpress=true;
+	}
+if(e.keyCode == 38) {
+uppress=true;
+	}
+if(e.keyCode == 40) {
+downpress=true;
+	}
+	
+if(e.keyCode == 87) {
+//console.log("wp");
+wpress=true;
+}
+if(e.keyCode==69){
+toolmode="edit";
+for(let i=0;i<aonum;i++){
+ao[i].x=ao[i].xanchor;
+ao[i].y=ao[i].yanchor;
+ao[i].movecount=0;
+
+}
+for(let i=0;i<playernum;i++){
+player[i].x=player[i].xanchor;
+player[i].y=player[i].yanchor;
+}
+
+drawedit();
+}
+
+}
+if(toolmode!="testplay"){//toolmode
+	if(e.keyCode == 83) {
+		if(1<=akanum){
+			json.length=0;
+			for(let i=0;i<akanum;i++){
+				var jsonhold = JSON.stringify( aka[i] );
+				//////console.log(jsonhold);
+ 				json.push(jsonhold);
+				//////console.log( "sendsave"+json );
+			}
+		}
+			json.push("\n");
+			if(1<=aonum){
+for(let i=0;i<aonum;i++){
+				var jsonhold = JSON.stringify( ao[i] );
+				//////console.log(jsonhold);
+ 				json.push(jsonhold);
+				//////console.log( "sendsave"+json );
+			}
+			}
+json.push("\n");
+			if(1<=playernum){
+for(let i=0;i<playernum;i++){
+				var jsonhold = JSON.stringify( player[i] );
+				//////console.log(jsonhold);
+ 				json.push(jsonhold);
+				//////console.log( "sendsave"+json );
+			}
+			}
+json.push("\n");
+			if(1<=goalnum){
+for(let i=0;i<goalnum;i++){
+				var jsonhold = JSON.stringify( goal[i] );
+				//////console.log(jsonhold);
+ 				json.push(jsonhold);
+				//////console.log( "sendsave"+json );
+			}
+			}
+
+
+
+			
+			socket.emit("save",json);	
+		
+	
+	
+	
+	
+	
+	}
+
+
+if(e.keyCode==71){
+
+
+
+}
+
+}
+}
+
+
+
+
+
+socket.on("fnameorder",function(fname){//使ってない感
+filename=fname;
+load();
+})
+
+socket.on("getgroup",function(grouproom,id){
+	if(id==socket.id){
+	document.getElementById("groupname").value=grouproom;
+	groupname=grouproom;
+	console.log("gname"+groupname);
+	}
+});
+
+/*
+socket.emit("loginstart");
+socket.on("loginstart",function(spone,sptwo,spthree,spfour,memnum){
+pone=spone;
+ptwo=sptwo;
+pthree=spthree;
+pfour=spfour;
+membernum=memnum;
+}
+);
+*/
+socket.on("memb",function(memnum,gamegroup,gname){
+if(gname==groupname){
+membernum=memnum;
+for(let i=0;i<gamegroupflag.length;i++){
+	gamegroupflag=gamegroup;
+}
+
+//console.log(membernum);
+//socket.emit("loginstart");
+}
+}
+);
+socket.on("loginfinal",function(pone,ptwo,pthree,pfour,member){
+//loadgame=true;
+if(pnum==1){
+
+
+if(membernum==1){
+
+if(pone==false){
+console.log("final");
+socket.emit("loginfinal");
+}else{
+console.log("ff");
+socket.emit("loginfinalfinal");
+}
+}
+
+
+else if(membernum==2){
+console.log("membernum==2");
+if(pone==false||ptwo==false){
+console.log("loginfinal"+pone+""+ptwo);
+socket.emit("loginfinal");
+}else{
+console.log("ff");
+socket.emit("loginfinalfinal");
+}
+}
+
+
+else if(membernum==3){
+//console.log("membernum==3");
+if(pone==false||ptwo==false||pthree==false){
+socket.emit("loginfinal");
+}else{
+socket.emit("loginfinalfinal");
+}
+}
+
+
+else if(membernum==4){
+//console.log("membernum==4");
+if(pone==false||ptwo==false||pthree==false||pfour==false){
+socket.emit("loginfinal");
+}else{
+socket.emit("loginfinalfinal");
+}
+}
+
+
+}
+}
+);
+
+socket.on("loginfinalfinal",function(gname){
+if(gname==groupname){
+console.log("finalfinal");
+alogin=true;
+countdown();
+}
+}
+);
+
+function countdown(){
+draw3();
+setTimeout(draw2,1000);
+setTimeout(draw1,2000);
+setTimeout(drawgo,3000);
+setTimeout(logintrue,3000);
+setTimeout(clearcount,6000);
+}
+
+function logintrue(){
+login=true;
+//ゲームモードにする
+
+toolmode="testplay";
+for(let i=0;i<akanum;i++){
+aka[i].draw();
+}
+for(let i=0;i<goalnum;i++){
+goal[i].draw();
+}
+for(let i=0;i<playernum;i++){
+player[i].draw();
+}
+for(let i=0;i<aonum;i++){
+ao[i].draw();
+}
+}
+
+function drawpsele(){
+	if(zlogin==false){
+		ctx.clearRect(0,0,700,500);
+
+		if(pnum==1&&pselect==true){
+			ctx.drawImage(psele2,0,0);
+		}else{
+			ctx.drawImage(psele,0,0);
+			ctx.drawImage(pselemessage,0,0);
+			switch(membernum){
+				case 0:
+
+				ctx.drawImage(count0,400,0);
+				break;
+				case 1:
+
+				ctx.drawImage(count1,400,0);
+				break;
+
+				case 2:
+
+				ctx.drawImage(count2,400,0);
+				break;
+
+				case 3:
+
+				ctx.drawImage(count3,400,0);
+				break;
+
+				case 4:
+
+				ctx.drawImage(count4,400,0);
+				break;
+			}
+		}
+		ctx.drawImage(sita,sitax,sitay);
+	}
+}
+
+
+function drawlogintime(){
+if(alogin==false&&zlogin==true){
+ctx.clearRect(0,0,700,500);
+ctx.drawImage(image0,0,0);
+}
+}
+
+function draw3(){
+c3=true;
+
+}
+function d3(){
+if(c3==true){
+ctx.clearRect(320,210,60,80);
+ctx.drawImage(count3,320,210);
+console.log("3");
+}
+}
+
+
+function draw2(){
+c3=false;
+c2=true;
+
+}
+function d2(){
+if(c2==true){
+ctx.clearRect(320,210,60,80);
+ctx.drawImage(count2,320,210);
+console.log("2");
+}
+}
+
+function draw1(){
+c2=false;
+c1=true;
+
+}
+function d1(){
+if(c1==true){
+ctx.clearRect(320,210,60,80);
+ctx.drawImage(count1,320,210);
+console.log("1");
+}
+}
+function drawgo(){
+c1=false;
+cgo=true;
+
+}
+function dgo(){
+if(cgo==true){
+ctx.clearRect(320,210,60,80);
+ctx.drawImage(go,320,210);
+console.log("go");
+}
+}
+function clearcount(){
+cgo=false;
+ctx.clearRect(320,210,60,80);
+
+}
+
+
+
+
+
+
+
+
+
+function filenamejudge(push){
+if(push=="join"){
+socket.emit("filenamejudge",document.getElementById("groupname").value,push,socket.id);
+}else{
+filename=document.getElementById("filename").value;
+console.log("push"+push);
+socket.emit("filenamejudge",filename,push,socket.id);
+}
+}
+
+
+
+socket.on("filenamejudge",function(fnjudge,push,id){
+if(id==socket.id){
+console.log("button"+push);
+if(fnjudge!=null){
+if(push=="save"){
+save();
+}else if(push=="load"){
+load(id);
+}else{
+groupname=document.getElementById("groupname").value;
+joinflag=true;
+socket.emit("fcopyorder",groupname,socket.id);
+}
+}else{
+console.log("エラー");
+}
+}
+});
+
+
+function load(id){
+if(loadgame==false){
+socket.emit("load",filename,id);//ここでid大事
+}
+}
+function keyUpHandler(e){
+if(e.keyCode == 37) {
+leftpress=false;
+	}
+if(e.keyCode == 39) {
+rightpress=false;
+	}
+if(e.keyCode == 38) {
+uppress=false;
+	}
+if(e.keyCode == 40) {
+downpress=false;
+	}
+	
+if(e.keyCode == 87) {
+wpress=false;
+}
+}
+
+
+canvas2.addEventListener('mousedown',function(e){//上レイヤーを対象にマウスイベントのリスナ
+
+
+
+});
+
+canvas2.addEventListener('dblclick',function(e){
+
+});
+
+canvas2.addEventListener('mousemove',function(e){//動かしてる間ドラッグ用の描画をやり直す
+
+});
+
+canvas2.addEventListener('mouseup',function(e){//ドロップしたら（モードによってはインスタンス生成して）最終描画
+});
+
+socket.on("fcopyorder",function(ljson,gname,id){
+	if(id==socket.id){
+		console.log(ljson);
+	loaddraw(ljson,id);	
+	}
+
+});
+
+socket.on("loaddraw",loaddraw=function(json,id){//json展開してオブジェクトリセットして再配置再描画
+	if(id==socket.id){
+	ctx.clearRect(0,0,1300,600);
+	drawpallet();
+	njson=json;
+	////console.log(njson);
+	for(let i=0;i<njson.length;i++){//赤ロード
+		if(njson[i]!="\n"){
+			newaka[i]=JSON.parse(njson[i]);//何故かここでもparseしないと中身がおかしくなる"のエスケープ文字てきなあれ
+		}else{
+		loadnext=i+1;
+		newakanum=i;
+		loadcancel=true;
+		break;
+		}
+		if(loadcancel==false){
+			newakanum=i+1;
+		}
+	//	loadcancel=false;
+		//console.dir("ga"+i+JSON.stringify(newaka[i]));
+	}
+	loadcancel=false;
+//////console.log(akanum);
+//////console.log(newakanum);	
+let newaocount=0;
+	for(let i=loadnext;i<njson.length;i++){//青ロード
+		if(njson[i]!="\n"){
+			newao[newaocount]=JSON.parse(njson[i]);//何故かここでもparseしないと中身がおかしくなる"のエスケープ文字てきなあれ
+		}else{
+		loadnext=i+1;
+		newaonum=newaocount;
+		loadcancel=true;
+		break;
+		}
+		if(loadcancel==false){
+			newaonum=newaocount+1;
+		}
+		//loadcancel=false;
+		//console.dir("ga"+i+JSON.stringify(newao[i]));
+		newaocount++;
+	}
+	loadcancel=false;
+let newplayercount=0;
+	for(let i=loadnext;i<njson.length;i++){//プレイヤーロード
+		if(njson[i]!="\n"){
+			newplayer[newplayercount]=JSON.parse(njson[i]);//何故かここでもparseしないと中身がおかしくなる"のエスケープ文字てきなあれ
+		}else{
+		loadnext=i+1;
+		newplayernum=newplayercount;
+		loadcancel=true;
+		break;
+		}
+		if(loadcancel==false){
+			newplayernum=newplayercount+1;
+		}
+		//	loadcancel=false
+			////console.log("plc"+loadcancel);
+		//console.dir("ga"+i+JSON.stringify(newplayer[i]));
+		newplayercount++;
+	}
+	loadcancel=false;
+let newgoalcount=0;
+////console.log("njlength"+njson.length);
+////console.log("loadnext"+loadnext);
+////console.log("loadcancel"+loadcancel);
+	for(let i=loadnext;i<njson.length;i++){//ゴールロード
+	
+		if(njson[i]!="\n"){
+		
+			newgoal[newgoalcount]=JSON.parse(njson[i]);//何故かここでもparseしないと中身がおかしくなる"のエスケープ文字てきなあれ
+			////console.log(newgoal[newgoalcount]);
+			////console.log("loadcancel"+loadcancel);
+		}else{
+		loadnext=i+1;
+		newgoalnum=newgoalcount;
+		////console.log("ngnum"+newgoalnum);
+		loadcancel=true;
+		break;
+		}
+		if(loadcancel==false){
+			newgoalnum=newgoalcount+1;
+			////console.log("ngcount"+newgoalcount);
+		}
+	//	loadcancel=false;
+		//console.dir("ga"+i+JSON.stringify(newgoal[i]));
+		newgoalcount++;
+	}
+	loadcancel=false;
+
+
+	if(akanum<=newakanum){//ロード前のakaがロード後より少ないとき
+	////console.log("前のakaがロード後より少ないとき");
+////console.log(akanum);
+////console.log(newakanum);
+	
+		for(let i=0;i<akanum;i++){
+			aka[i].x=newaka[i].x;
+			aka[i].y=newaka[i].y;
+			aka[i].number=newaka[i].number;
+			aka[i].ex=newaka[i].ex;
+		//	aka[i].draw();
+		}
+
+		for(let i=akanum;i<newakanum;i++){
+
+			aka[i]=new block1(newaka[i].x,newaka[i].y,newaka[i].number,"./akap.png","wall");
+			aka[i].ex=newaka[i].ex;
+			akanum++;
+		//	aka[i].draw();
+		}
+	}else{//ロード前のakaがロード後より多いとき
+		////console.log("前のakaがロード後より多いとき");
+////console.log(akanum);
+////console.log(newakanum);
+	for(let i=0;i<newakanum;i++){
+aka[i].x=newaka[i].x;
+			aka[i].y=newaka[i].y;
+		aka[i].number=newaka[i].number;
+		aka[i].ex=newaka[i].ex;
+	//	aka[i].draw();
+	}
+		for(let i=newakanum;i<akanum;i++){
+			aka[i].x=-100;
+			aka[i].y=-100;
+		}
+		akanum=newakanum;
+
+	}
+
+
+
+if(aonum<=newaonum){//ロード前のaoがロード後より少ないとき
+////console.log("前のaoがロード後より少ないとき");
+////console.log(aonum);
+////console.log(newaonum);
+		for(let i=0;i<aonum;i++){
+			ao[i].x=newao[i].x;
+			ao[i].y=newao[i].y;
+			ao[i].number=newao[i].number;
+			ao[i].ex=newao[i].ex;
+			ao[i].hp=newao[i].hp;
+			ao[i].damage=newao[i].damage;
+			ao[i].movespeedx=newao[i].movespeedx;
+			ao[i].movespeedy=newao[i].movespeedy;
+			ao[i].movecount=newao[i].movecount;
+			ao[i].moverange=newao[i].moverange;
+
+
+
+			
+		//	ao[i].draw();
+		}
+
+		for(let i=aonum;i<newaonum;i++){
+
+			ao[i]=new enemy1(newao[i].x,newao[i].y,newao[i].number,"./aop.png","enemy1");
+			ao[i].ex=newao[i].ex;
+			ao[i].hp=newao[i].hp;
+			ao[i].damage=newao[i].damage;
+			ao[i].movespeedx=newao[i].movespeedx;
+			ao[i].movespeedy=newao[i].movespeedy;
+			ao[i].movecount=newao[i].movecount;
+			ao[i].moverange=newao[i].moverange;
+			aonum++;
+		//	ao[i].draw();
+		}
+	}else{//ロード前のaoがロード後より多いとき
+	////console.log("前のaoがロード後より多いとき");
+	////console.log(aonum);
+////console.log(newaonum);
+	for(let i=0;i<newaonum;i++){
+
+	ao[i].x=newao[i].x;
+			ao[i].y=newao[i].y;
+			ao[i].number=newao[i].number;
+			ao[i].ex=newao[i].ex;
+			ao[i].hp=newao[i].hp;
+			ao[i].damage=newao[i].damage;
+			ao[i].movespeedx=newao[i].movespeedx;
+			ao[i].movespeedy=newao[i].movespeedy;
+			ao[i].movecount=newao[i].movecount;
+			ao[i].moverange=newao[i].moverange;
+		
+	//	ao[i].draw();
+
+		
+	}
+		for(let i=newaonum;i<aonum;i++){
+			ao[i].x=-100;
+			ao[i].y=-100;
+		}
+		aonum=newaonum;
+
+	}
+
+
+if(playernum<=newplayernum){//ロード前のplayerがロード後より少ないとき
+////console.log("前のplayerがロード後より少ないとき");
+////console.log(playernum);
+////console.log(newplayernum);
+		for(let i=0;i<playernum;i++){
+		player[i].x=newplayer[i].x;
+	player[i].y=newplayer[i].y;
+	player[i].number=newplayer[i].number;
+		player[i].model=newplayer[i].model;
+		player[i].move=newplayer[i].move;
+		player[i].xanchor=newplayer[i].xanchor;
+		player[i].yanchor=newplayer[i].yanchor;
+player[i].movestyle=newplayer[i].movestyle;
+	player[i].xaccella=newplayer[i].xaccella;
+		player[i].yaccella=newplayer[i].yaccella;
+		player[i].accella=newplayer[i].accella;
+		player[i].handle=newplayer[i].handle;
+		player[i].angle=newplayer[i].angle;
+		player[i].gravity=newplayer[i].gravity;
+				player[i].jump=newplayer[i].jump;
+					player[i].jumpcancel=newplayer[i].jumpcancel;
+					player[i].leap=newplayer[i].leap;
+		//	player[i].draw();
+		}
+
+		for(let i=playernum;i<newplayernum;i++){
+
+			player[i]=new players(newplayer[i].x,newplayer[i].y,newplayer[i].number,"./mycar.png","player");
+			player[i].move=newplayer[i].move;
+		player[i].xanchor=newplayer[i].xanchor;
+		player[i].yanchor=newplayer[i].yanchor;
+			player[i].movestyle=newplayer[i].movestyle;
+				player[i].xaccella=newplayer[i].xaccella;
+		player[i].yaccella=newplayer[i].yaccella;
+		player[i].accella=newplayer[i].accella;
+		player[i].handle=newplayer[i].handle;
+		player[i].angle=newplayer[i].angle;
+		player[i].gravity=newplayer[i].gravity;
+			player[i].jump=newplayer[i].jump;
+				player[i].jumpcancel=newplayer[i].jumpcancel;
+				player[i].leap=newplayer[i].leap;
+			playernum++;
+		//	player[i].draw();
+		}
+	}else{//ロード前のplayerがロード後より多いとき
+	////console.log("前のplayerがロード後より多いとき");
+	////console.log(playernum);
+////console.log(newplayernum);
+	for(let i=0;i<newplayernum;i++){
+	player[i].x=newplayer[i].x;
+	player[i].y=newplayer[i].y;
+	player[i].number=newplayer[i].number;
+		player[i].model=newplayer[i].model;
+		player[i].move=newplayer[i].move;
+		player[i].xanchor=newplayer[i].xanchor;
+		player[i].yanchor=newplayer[i].yanchor;
+			player[i].xaccella=newplayer[i].xaccella;
+		player[i].yaccella=newplayer[i].yaccella;
+		player[i].accella=newplayer[i].accella;
+		player[i].handle=newplayer[i].handle;
+		player[i].angle=newplayer[i].angle;
+		player[i].gravity=newplayer[i].gravity;
+		player[i].movestyle=newplayer[i].movestyle;
+			player[i].jump=newplayer[i].jump;
+			player[i].jumpcancel=newplayer[i].jumpcancel;
+			player[i].leap=newplayer[i].leap;
+		player[i].ex=newplayer[i].ex;
+		
+	//	player[i].draw();
+
+		
+	}
+		for(let i=newplayernum;i<playernum;i++){
+			player[i].x=-100;
+			player[i].y=-100;
+		}
+		playernum=newplayernum;
+
+	}
+
+
+	if(goalnum<=newgoalnum){//ロード前のgoalがロード後より少ないとき
+	////console.log("前のgoalがロード後より少ないとき");
+		////console.log(goalnum);
+////console.log(newgoalnum);
+		for(let i=0;i<goalnum;i++){
+			goal[i].x=newgoal[i].x;
+			goal[i].y=newgoal[i].y;
+			goal[i].number=newgoal[i].number;
+			goal[i].ex=newgoal[i].ex;
+		//	goal[i].draw();
+		}
+
+		for(let i=goalnum;i<newgoalnum;i++){
+
+			goal[i]=new block1(newgoal[i].x,newgoal[i].y,newgoal[i].number,"./goal.png","goal");
+			goal[i].ex=newgoal[i].ex;
+			goalnum++;
+			//goal[i].draw();
+		}
+	}else{//ロード前のgoalがロード後より多いとき
+		////console.log("前のgoalがロード後より多いとき");
+		////console.log(goalnum);
+////console.log(newgoalnum);
+	for(let i=0;i<newgoalnum;i++){
+
+		goal[i].number=newgoal[i].number;
+		goal[i].ex=newgoal[i].ex;
+	//	goal[i].draw();
+	}
+		for(let i=newgoalnum;i<goalnum;i++){
+			goal[i].x=-100;
+			goal[i].y=-100;
+		}
+		goalnum=newgoalnum;
+
+	}
+
+
+loadgame=true;
+	}
+});
+
+var image1=new Image(); 
+image1.src = "./akap.png";
+var playerimage=new Image(); 
+playerimage.src = "./mycar.png";
+var goalimage=new Image(); 
+goalimage.src = "./goal.png";
+var clearimage=new Image(); 
+clearimage.src = "./clear.png";
+var enemyimage1=new Image(); 
+enemyimage1.src = "./aop.png";
+
+class players{
+	constructor(x,y,num,image){
+	this.x=x;
+	this.y=y;
+	this.number=num;
+	this.movestyle="human";
+this.image=new Image();//これでいいのか...this.drawでは使ってみてる
+		this.image.src=image;
+		this.model="player";
+		this.move=2;
+		this.xanchor=x;
+		this.yanchor=y;
+		this.xaccella=0;
+		this.yaccella=0;
+		this.accella=0;
+		this.handle=0;
+		this.angle=0;
+		this.gravity=0.5;
+		this.leap=10;
+		this.jump=true;
+		this.jumpcancel=false;
+	}
+	draw(x=this.x,y=this.y){//ドラッグ中はレイヤー2に描画しているのでドロップ位置でレイヤー1に描きなおし
+		
+		ctx.drawImage(this.image,x,y);
+	}
+	clearthis(){
+		ctx.clearRect(this.x,this.y,objwid,objhei);
+	}
+controlhandler() {
+//////console.log("move");
+
+}	
+
+send(){
+if(pnum==this.number){
+callsend(this.number,this.x,this.y);
+}
+}
+
+moveprocess(){
+if(this.number==pnum){
+if(toolmode=="testplay"){//toolmode
+if(this.y>600){
+this.x=this.xanchor;
+this.y=this.yanchor;
+}
+if(this.hp<=0){
+this.x=this.xanchor;
+this.y=this.yanchor;
+}
+
+if(leftpress==true) {
+this.xaccella-=this.move;
+	}
+if(rightpress==true) {
+this.xaccella+=this.move;
+	}
+	if(this.movestyle=="human"){
+if(wpress==true) {
+if(this.jumpcancel==false){
+this.jump=true;
+this.jumpcancel=true;
+//console.log(this.jumpcancel);
+this.yaccella=-(this.leap);
+
+}
+	}
+		if(downpress==true) {
+this.yaccella+=0.1;
+	}
+	}
+
+
+	if(this.xaccella>=3){
+this.xaccella=3;
+	}
+	if(this.xaccella<=-3){
+this.xaccella=-3;
+	}
+
+	
+	
+	if(this.movestyle=="machine"){//human以外-1
+if(uppress==true) {
+this.yaccella-=this.move;
+	}
+	if(downpress==true) {
+this.yaccella+=this.move;
+	}
+if(this.yaccella>=3){
+this.yaccella=3;
+	}
+	if(this.yaccella<=-3){
+this.yaccella=-3;
+	}
+	
+}
+
+
+
+	
+}
+//console.log(this.xaccella);
+//console.log(this.yaccella);
+this.x+=this.xaccella;
+
+this.y+=this.yaccella;
+//console.log(this.jump);
+if(this.movestyle=="human"){
+if(this.jump==true){
+this.yaccella+=this.gravity;
+}else{
+//this.yaccella=0.1;
+}
+}
+
+if(this.xaccella>0){
+this.xaccella-=0.1;
+}else if(this.xaccella<0){
+this.xaccella+=0.1;
+}
+if(this.xaccella>-0.1&&this.xaccella<0.1){
+this.xaccella=0;
+}
+if(this.movestyle=="machine"){
+if(this.yaccella>0){
+this.yaccella-=0.1;
+}else if(this.yaccella<0){
+this.yaccella+=0.1;
+}
+if(this.yaccella>-0.1&&this.yaccella<0.1){
+this.yaccella=0;
+}
+}
+}
+}
+
+collisionanddraw(){
+	for(let i=0;i<akanum;i++){//移動したらコリジョン判定
+		
+			flag=aka[i].collisionjudge(this.x,this.y,this.x+objwid,this.y+objhei,this);
+			if(flag==false){
+			this.jump=false;
+			this.jumpcancel=false;
+				this.yaccella=0;
+				
+				break;
+			}
+			}
+
+			
+			if(flag!=false){
+for(let i=0;i<aonum;i++){//移動したらコリジョン判定
+		
+			flag=ao[i].collisionjudge(this.x,this.y,this.x+objwid,this.y+objhei,this);
+			if(flag==false){
+			this.jump=false;
+			this.jumpcancel=false;
+		//	this.yaccella=0;
+				break;
+			}
+			}
+			}
+
+
+			if(flag!=false){
+for(let i=0;i<playernum;i++){//移動したらコリジョン判定
+		if(i!=this.number-1){
+			flag=player[i].collisionjudge(this.x,this.y,this.x+objwid,this.y+objhei,this);
+			if(flag==false){
+			this.jump=false;
+			this.jumpcancel=false;
+		//	this.yaccella=0;
+				break;
+				}
+			}
+			}
+			}
+
+			
+			////console.log(flag);
+if(flag==true){
+			this.jump=true;
+			this.jumpcancel=true;	
+			
+			}
+
+
+
+
+
+
+
+
+
+			
+	for(let i=0;i<goalnum;i++){
+		goal[i].collisionjudge(this.x,this.y,this.x+objwid,this.y+objhei,this);
+	}
+	
+}
+
+	
+
+	collisionjudge(ax,ay,cx,cy,obj){
+	
+		let ulx=this.x;
+		let uly=this.y;
+		let lrx=this.x+25;
+		let lry=this.y+25;
+		let flga=false;
+		let flgb=false;
+		let flgc=false;
+		let flgd=false;
+		
+		if(ax<lrx){
+			flga=true;
+		}
+		if(cx>ulx){
+			flgb=true;
+		}
+		if(ay<lry){
+			flgc=true;
+		}
+		if(cy>uly){
+			flgd=true;
+		}
+		if(flga==true&&flgb==true&&flgc==true&&flgd==true){//全trueで衝突
+			
+			//testplayモード
+				if(this.model=="player"){
+				
+					if(Math.abs(ulx-ax)>=Math.abs(uly-ay)){//横ぬるり
+					if(Math.abs(obj.xaccella)<Math.abs(this.xaccella)){
+						if((ulx-ax)>=0){//一致なら強制左
+						
+							obj.xaccella=-1;
+							//player[0].y=this.y;
+							//////console.log("左");
+						}else{
+							obj.xaccella=1;
+							//player[0].y=this.y;
+							//////console.log("右");
+						}
+
+						}else if(Math.abs(ulx-ax)==Math.abs(uly-ay)){
+if((ulx-ax)>=0){//一致なら強制左
+						
+							obj.x=this.x-objwid;
+							//player[0].y=this.y;
+							//////console.log("左");
+						}else{
+							obj.x=this.x+objwid;
+							//player[0].y=this.y;
+							//////console.log("右");
+						}
+						}
+					}else{//縦ぬるり
+						if(Math.abs(obj.yaccella)<Math.abs(this.yaccella)){
+						if((uly-ay)>=0){//一致なら強制上
+							//player[0].x=this.x;
+							obj.yaccella=-10;
+							//////console.log("上");
+						}else{
+							//player[0].x=this.x;
+							obj.yaccella-=1;
+							//////console.log("下");
+						}
+						}else if(Math.abs(obj.yaccella)==Math.abs(this.yaccella)){
+	if((uly-ay)>=0){//一致なら強制上
+							//player[0].x=this.x;
+							obj.yaccella=-10;
+							//////console.log("上");
+						}else{
+							//player[0].x=this.x;
+							obj.yaccella-=1;
+							//////console.log("下");
+						}
+						}
+					}
+				
+			}
+		//////console.log("衝突"+this.number);
+		return false;
+		}else{
+			//衝突なし
+			return true;
+			//////console.log("衝突なし");
+		}
+		
+	}
+
+
+	
+}
+
+
+class block1{
+	constructor(x,y,num,image,model){
+		this.x=x;
+		this.y=y;
+		this.number=num;
+		this.image=new Image();//これでいいのか...this.drawでは使ってみてる
+		this.image.src=image;
+		this.ex="デフォルト";//試験的な入力用
+		this.model=model;
+	}
+	
+	draw(x=this.x,y=this.y){//ドラッグ中はレイヤー2に描画しているのでドロップ位置でレイヤー1に描きなおし
+		ctx.drawImage(this.image,x,y);
+	}
+
+	callnum(){//デバッグ用
+		//////console.log(this.number);
+	}
+
+	
+
+	collisionjudge(ax,ay,cx,cy,obj){
+	
+		let ulx=this.x;
+		let uly=this.y;
+		let lrx=this.x+25;
+		let lry=this.y+25;
+		let flga=false;
+		let flgb=false;
+		let flgc=false;
+		let flgd=false;
+		
+		if(ax<lrx){
+			flga=true;
+		}
+		if(cx>ulx){
+			flgb=true;
+		}
+		if(ay<lry){
+			flgc=true;
+		}
+		if(cy>uly){
+			flgd=true;
+		}
+		if(flga==true&&flgb==true&&flgc==true&&flgd==true){//全trueで衝突
+			
+			//testplayモード
+				if(this.model=="wall"){
+				
+				if((uly-ay)>=0){//一致なら強制上
+							//player[0].x=this.x;
+							obj.y=this.y-objhei;
+						//console.log("上");
+						}else{
+							//player[0].x=this.x;
+							obj.y=this.y+objhei;
+							//console.log("下");
+						}
+						
+				/*//横補正があるとジャンプしたとき地面に刺さることがあるけど壁つかみに使えるかも
+					if(Math.abs(ulx-ax)>=Math.abs(uly-ay)){//横ぬるり
+						if((ulx-ax)>=0){//一致なら強制左
+							obj.x=this.x-objwid;
+							//player[0].y=this.y;
+						//console.log("左");
+						}else{
+							obj.x=this.x+objwid;
+							//player[0].y=this.y;
+						//console.log("右");
+						}
+					}else{//縦ぬるり
+						if((uly-ay)>=0){//一致なら強制上
+							//player[0].x=this.x;
+							obj.y=this.y-objhei;
+						//console.log("上");
+						}else{
+							//player[0].x=this.x;
+							obj.y=this.y+objhei;
+							//console.log("下");
+						}
+					}
+					*/
+				}else{
+				//////console.log(this.model);
+				//////console.log("clear");
+					drawclear();
+				}
+			
+		////console.log("衝突"+this.number);
+		return false;
+		}else{
+			//衝突なし
+			return true;
+			//////console.log("衝突なし");
+		}
+		
+	}
+
+
+}
+
+
+
+class enemy1{
+	constructor(x,y,num,image,model){
+		this.x=x;
+		this.y=y;
+		this.number=num;
+		this.image=new Image();//これでいいのか...this.drawでは使ってみてる
+		this.image.src=image;
+		this.ex="デフォルト";//試験的な入力用
+		this.model=model;
+		this.hp=1
+		this.damage=1
+		this.movespeedx=1;
+		this.movespeedy=0;
+		this.movecount=0;
+		this.moverange=100;
+		this.xanchor=x;
+		this.yanchor=y;
+	}
+	
+	draw(x=this.x,y=this.y){//ドラッグ中はレイヤー2に描画しているのでドロップ位置でレイヤー1に描きなおし
+		ctx.drawImage(this.image,x,y);
+	}
+clearthis(){
+		ctx.clearRect(this.x,this.y,objwid,objhei);
+	}
+	callnum(){//デバッグ用
+		//////console.log(this.number);
+	}
+
+	
+
+	moveline(){
+	if(toolmode=="testplay"){
+	player[0].clearthis();//ゲーム的な描画は後で修正
+			this.clearthis();
+	this.movecount++;
+		this.x+=this.movespeedx;
+		this.y+=this.movespeedy;
+		this.collisionjudge(player[0].x,player[0].y,player[0].x+objwid,player[0].y+objhei,player[0]);
+		player[0].draw();
+		if(this.movecount>=this.moverange){
+			this.movecount=0;
+			this.movespeedx*=(-1);
+			this.movespeedy*=(-1);
+			
+			
+		}
+			//////console.log("x"+this.x+"y"+this.y);
+		this.draw();
+		}
+	
+	}
+
+
+
+	collisionjudge(ax,ay,cx,cy,obj){
+		let ulx=this.x;
+		let uly=this.y;
+		let lrx=this.x+25;
+		let lry=this.y+25;
+		let flga=false;
+		let flgb=false;
+		let flgc=false;
+		let flgd=false;
+		
+		if(ax<lrx){
+			flga=true;
+		}
+		if(cx>ulx){
+			flgb=true;
+		}
+		if(ay<lry){
+			flgc=true;
+		}
+		if(cy>uly){
+			flgd=true;
+		}
+		if(flga==true&&flgb==true&&flgc==true&&flgd==true){//全trueで衝突
+			
+		//testplayモード
+				if(this.model=="enemy1"){
+					if(Math.abs(ulx-ax)>=Math.abs(uly-ay)){//横ぬるり
+						if((ulx-ax)>=0){//一致なら強制左
+							obj.xaccella=(-6);
+							obj.yaccella=(-4);
+							//player[0].y=this.y;
+							//console.log("左");
+						}else{
+							obj.xaccella=6;
+							obj.yaccella=(-4);
+							//player[0].y=this.y;
+							//console.log("右");
+						}
+					}else{//縦ぬるり
+						if((uly-ay)>=0){//一致なら強制上
+							//player[0].x=this.x;
+						obj.yaccella=(-6);
+							//console.log("上");
+						}else{
+							//player[0].x=this.x;
+							obj.yaccella=6;
+							//console.log("下");
+						}
+					}
+				}
+			
+		//////console.log("衝突"+this.number);
+		return false;
+		}else{
+			//衝突なし
+			return true;
+			//////console.log("衝突なし");
+		}
+		
+	}
+
+
+}
+
+function drawgame(){
+if(toolmode=="testplay"){
+ctx.clearRect(0,0,1300,600);
+for(let i=0;i<akanum;i++){
+aka[i].draw();
+}
+for(let i=0;i<aonum;i++){
+ao[i].draw();
+}
+
+
+for(let i=0;i<goalnum;i++){
+goal[i].draw();
+}
+for(let i=0;i<playernum;i++){
+player[i].draw();
+}
+}
+}
+
+
+function drawpallet(){//オブジェクトパレット描画
+	ctx.drawImage(image1,10,10);
+	ctx.drawImage(enemyimage1,10,60);
+	ctx.drawImage(playerimage,10,110);
+	ctx.drawImage(goalimage,10,160);
+}
+
+
+function drawclear(){
+ctx2.drawImage(clearimage,325,150);
+}
+
+
+
+function callsend(num,x,y){
+socket.emit("psend",num,x,y,groupname);
+
+
+}
+
+socket.on("sendend",function(pn,x,y,gname){
+
+if(groupname==gname){
+if(pnum!=pn){
+player[pn-1].x=x;
+player[pn-1].y=y;
+console.log(pn+"in"+gname);
+
+}
+}
+
+});
+
+
+
+
+
+setInterval(function(){//メイン
+if(alogin==true){
+
+d3();
+d2();
+d1();
+dgo();
+drawgame();
+}else{
+
+drawpsele();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(login==true){
+for(let i=0;i<aonum;i++){
+ao[i].moveline();
+}
+if(playernum>0){
+if(toolmode=="testplay"){
+
+
+
+for(let i=0;i<playernum;i++){
+player[i].collisionanddraw();
+
+player[i].send();
+
+player[i].moveprocess();
+
+
+}
+
+
+
+}
+}
+
+
+}
+},16);
+
+
+</script>
+
+
+</body>
+</html>
