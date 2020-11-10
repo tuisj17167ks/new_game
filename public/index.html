@@ -1,16 +1,937 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-<head>
-        <title>ofg_entrance</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-         body{background-color: #ddd;}
+  <head>
+    <title>test</title>
+    <style>
+      /*画像をかぶせて表示させる。*/
+      .canvas-wrapper {
+        position: relative;
+      }
 
-</style> 
- </head>
-<body>
-<a href="edit.html">ゲームを作る</a><br>
-<a href="game.html">作ったゲームで遊ぶ</a>
-</body>
+      .canvas-wrapper canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+    <button type="button" id="bottom" onclick="Bottom_click();">
+      <img src="image/不快ボタン.gif" /><br />
+      <font size="1">不快ボタン</font>
+    </button>
+    <div class="canvas-wrapper">
+      <canvas id="rectangle" width="640" height="480"></canvas>
+    </div>
+    <div id="div1"></div>
+
+    <script src="test.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+      var mydata; //id,x,y,time
+      var enemy = []; //id,x,y,time
+      var socket = io.connect(); //node.jsを利用するための変数
+      //canvas初期起動
+      var rect_canvas = document.getElementById("rectangle");
+      var ctx = rect_canvas.getContext("2d");
+      var way = 1; //1:up 2:down 3:left 4:right
+      var act = 0;
+      var start = 0;
+      var stert_time = 3;
+      var people = 1;
+      var range = 3;
+      var item = [{ name: 1, x: 7, y: 7 }];
+      let item_get = 0;
+      let shot_moshon = 0;
+      let shot_image = [
+        "image/shot1.png",
+        "image/shot2.png",
+        "image/shot3.png"
+      ];
+
+      var maze = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+        [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0],
+        [0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+        [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0],
+        [0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ];
+
+      socket.emit("In");
+      socket.on("In", function (data) {
+        if (!mydata) {
+          mydata = data[data.length - 1];
+          for (var i = 0; i < data.length - 1; i++) {
+            enemy.push(data[i]);
+          }
+        } else {
+          enemy.push(data[data.length - 1]);
+          console.log(enemy);
+        }
+        veu();
+      });
+      socket.on("control", function () {
+        act = 4;
+        console.log("This device is manager");
+        control();
+      });
+
+      function control() {
+        ctx.beginPath();
+        ctx.font = "bold 20px Arial, meiryo, sans-serif";
+        ctx.fillStyle = "rgba( 0, 0, 0, 0.8 )";
+        ctx.fillText("管理者要ページ", 10, 10, 2000, 1000);
+        const div1 = document.getElementById("div1");
+        // 要素の追加
+        if (!div1.hasChildNodes()) {
+          const p1 = document.createElement("p");
+          const text1 = document.createTextNode("管理者用ページです");
+          p1.appendChild(text1);
+          div1.appendChild(p1);
+        }
+        document.getElementById("bottom").style.display = "none";
+        socket.emit("cont");
+      }
+
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      var login = setInterval(() => {
+        if (act == 0) {
+          ctx.clearRect(0, 0, 640, 640);
+          ctx.beginPath();
+          // 画像読み込み
+          const chara = new Image();
+          chara.src = "image/start.png"; // 画像のURLを指定
+          ctx.drawImage(chara, 0, 0);
+          number_write(enemy.length + 1, 260, 340);
+          if (enemy.length >= 3) {
+            game_start();
+            clearInterval(login);
+          }
+        } else {
+          clearInterval(login);
+        }
+      }, 100);
+
+      function game_start() {
+        act++;
+        ctx.clearRect(0, 0, 640, 640);
+        ctx.beginPath();
+        setInterval(update, 1000 / 20);
+        setInterval(time_count, 1000);
+        console.log("This stop");
+      }
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      function stert_count() {
+        number_write(stert_time, 640 / 2, 480 / 2);
+        stert_time--;
+        if (stert_time <= 0) {
+          clearInterval();
+        }
+      }
+
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      function number_write(number, x, y) {
+        const chara = new Image();
+        if (number == 0) chara.src = "image/write/0.png";
+        if (number == 1) chara.src = "image/write/1.png";
+        if (number == 2) chara.src = "image/write/2.png";
+        if (number == 3) chara.src = "image/write/3.png";
+        ctx.drawImage(chara, x, y);
+      }
+
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      function Bottom_click() {
+        console.log();
+        socket.emit("discomfort", mydata.id, mydata.time);
+      }
+
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      var update = function () {
+        if (act == 1) {
+          socket.emit("Data", mydata);
+        }
+      };
+
+      /*========================================*
+      |                                         |
+      *=========================================*/
+      var time_count = function () {
+        if (act == 1) {
+          mydata.time++;
+        }
+      };
+
+      socket.on("Data", function (data) {
+        for (var i = 0; i < data.length; i++) {
+          //dataの配列数分
+          if (data[i].id != mydata.id) {
+            //もし自身のidでないなら
+            for (var j = 0; j < enemy.length; j++) {
+              //enemyの数分
+              if (data[i].id == enemy[j].id) {
+                //もしidが一致したなら
+                enemy[j] = data[i];
+              }
+            }
+          }
+        }
+        veu();
+      });
+
+      socket.on("damege", function (id) {
+        if (id == mydata.id) act = 2;
+        else {
+          for (var i = 0; i < enemy.length; i++) {
+            //enemyの数分
+            if (id == enemy[i].id) {
+              //もしidが一致したなら
+              enemy.splice(i, 1);
+              if (enemy.length <= 0) {
+                act = 3;
+              }
+            }
+          }
+        }
+      });
+
+      function item_acq(id) {
+        socket.emit("item_get", id);
+        item_get = 1;
+      }
+
+      socket.on("item_del", function (id) {
+        for (var i = 0; i < item.length; i++) {
+          if (item[i].name == id) {
+            item.splice(i, 1);
+          }
+        }
+      });
+
+      document.onkeydown = function (e) {
+        if (act == 1) {
+          if (e.keyCode == 32) {
+            //spase key
+            shot_veu();
+            for (var i = 0; i < enemy.length; i++) {
+              if (way == 1) {
+                if (
+                  enemy[i].x == mydata.x &&
+                  mydata.y > enemy[i].y &&
+                  enemy[i].y >= mydata.y - range
+                ) {
+                  socket.emit("HIT", enemy[i].id);
+                }
+              }
+              if (way == 2) {
+                if (
+                  enemy[i].x == mydata.x &&
+                  mydata.y < enemy[i].y &&
+                  enemy[i].y <= mydata.y + range
+                ) {
+                  socket.emit("HIT", enemy[i].id);
+                }
+              }
+              if (way == 3) {
+                if (
+                  enemy[i].x < mydata.x &&
+                  mydata.y == enemy[i].y &&
+                  enemy[i].x >= mydata.x - range
+                ) {
+                  socket.emit("HIT", enemy[i].id);
+                }
+              }
+              if (way == 4) {
+                if (
+                  enemy[i].x > mydata.x &&
+                  mydata.y == enemy[i].y &&
+                  enemy[i].x <= mydata.x + range
+                ) {
+                  socket.emit("HIT", enemy[i].id);
+                }
+              }
+            }
+          }
+          if (e.keyCode == 65) {
+            //←key
+            if (way == 1) way = range;
+            else if (way == 2) way = 4;
+            else if (way == 3) way = 2;
+            else if (way == 4) way = 1;
+            veu();
+          }
+          if (e.keyCode == 87) {
+            //↑ key
+            if (way == 1) {
+              if (maze[mydata.y - 1][mydata.x] >= 1) {
+                mydata.y--;
+                if (maze[mydata.y][mydata.x] == 4) {
+                  for (var i = 0; i < item.length; i++) {
+                    if (item[i].x == mydata.x && item[i].y == mydata.y) {
+                      item_acq(item[i].name);
+                    }
+                  }
+                }
+              }
+            } else if (way == 2) {
+              if (maze[mydata.y + 1][mydata.x] >= 1) {
+                mydata.y++;
+                if (maze[mydata.y][mydata.x] == 4) {
+                  for (var i = 0; i < item.length; i++) {
+                    if (item[i].x == mydata.x && item[i].y == mydata.y) {
+                      item_acq(item[i].name);
+                    }
+                  }
+                }
+              }
+            } else if (way == 3) {
+              if (maze[mydata.y][mydata.x - 1] >= 1) {
+                mydata.x--;
+                if (maze[mydata.y][mydata.x] == 4) {
+                  for (var i = 0; i < item.length; i++) {
+                    if (item[i].x == mydata.x && item[i].y == mydata.y) {
+                      item_acq(item[i].name);
+                    }
+                  }
+                }
+              }
+            } else if (way == 4) {
+              if (maze[mydata.y][mydata.x + 1] >= 1) {
+                mydata.x++;
+                if (maze[mydata.y][mydata.x] == 4) {
+                  for (var i = 0; i < item.length; i++) {
+                    if (item[i].x == mydata.x && item[i].y == mydata.y) {
+                      item_acq(item[i].name);
+                    }
+                  }
+                }
+              }
+            } else;
+
+            veu();
+          }
+          if (e.keyCode == 68) {
+            //→ key
+            if (way == 1) way = 4;
+            else if (way == 2) way = 3;
+            else if (way == 3) way = 1;
+            else if (way == 4) way = 2;
+            veu();
+          }
+          if (e.keyCode == 83) {
+            //↓ key
+            if (way == 1) way = 2;
+            else if (way == 2) way = 1;
+            else if (way == 3) way = 4;
+            else if (way == 4) way = 3;
+            veu();
+          }
+        }
+      };
+
+      var right_image = [
+        "image/bacimage/1st/right/sucrin1.jpg",
+        "image/bacimage/1st/right/sucrin2.jpg",
+        "image/bacimage/2nd/right/sucrin1.jpg",
+        "image/bacimage/2nd/right/sucrin2.jpg",
+        "image/bacimage/2nd/right/sucrin3.jpg",
+        "image/bacimage/3rd/right/sucrin1.jpg",
+        "image/bacimage/3rd/right/sucrin2.jpg",
+        "image/bacimage/3rd/right/sucrin3.jpg",
+        "image/bacimage/3rd/right/sucrin4.jpg",
+        "image/bacimage/3rd/right/sucrin5.jpg",
+        "image/bacimage/none/right/sucrin1.jpg",
+        "image/bacimage/none/right/sucrin2.jpg",
+        "image/bacimage/none/right/sucrin3.jpg",
+        "image/bacimage/none/right/sucrin4.jpg",
+        "image/bacimage/none/right/sucrin5.jpg",
+      ];
+
+      var left_image = [
+        "image/bacimage/1st/left/sucrin1.jpg",
+        "image/bacimage/1st/left/sucrin2.jpg",
+        "image/bacimage/2nd/left/sucrin1.jpg",
+        "image/bacimage/2nd/left/sucrin2.jpg",
+        "image/bacimage/2nd/left/sucrin3.jpg",
+        "image/bacimage/3rd/left/sucrin1.jpg",
+        "image/bacimage/3rd/left/sucrin2.jpg",
+        "image/bacimage/3rd/left/sucrin3.jpg",
+        "image/bacimage/3rd/left/sucrin4.jpg",
+        "image/bacimage/3rd/left/sucrin5.jpg",
+        "image/bacimage/none/left/sucrin1.jpg",
+        "image/bacimage/none/left/sucrin2.jpg",
+        "image/bacimage/none/left/sucrin3.jpg",
+        "image/bacimage/none/left/sucrin4.jpg",
+        "image/bacimage/none/left/sucrin5.jpg",
+      ];
+
+      function shot() {
+        // 画像読み込み
+        const chara = new Image();
+        chara.src = "image/shot.png"; // 画像のURLを指定
+        chara.onload = () => {
+          ctx.drawImage(
+            chara,
+            640 / 2 + Math.random() * 20,
+            480 / 3 + Math.random() * 20
+          );
+        };
+      }
+
+      function bac() {
+        // 画像読み込み
+        const left_chara = new Image();
+        const right_chara = new Image();
+        const angle = new Image();
+
+        if (way == 1) {
+          /*========================================/
+            |　　　　　　　　上方向右壁確認　　　　　　　|
+            /========================================*/
+          angle.src = "image/angleN.png";
+          if (maze[mydata.y - 1][mydata.x] >= 1) {
+            if (maze[mydata.y - 2][mydata.x] >= 1) {
+              if (maze[mydata.y - 3][mydata.x] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y - 2][mydata.x + 1] >= 1) {
+                  if (maze[mydata.y][mydata.x + 1] >= 1)
+                    right_chara.src = right_image[14];
+                  else right_chara.src = right_image[11];
+                } else if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[12];
+                else if (maze[mydata.y][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[13];
+                else right_chara.src = right_image[10];
+              } else {
+                //3rd:2マス以上の深度あり
+                if (maze[mydata.y - 2][mydata.x + 1] >= 1) {
+                  if (maze[mydata.y][mydata.x + 1] >= 1)
+                    right_chara.src = right_image[9];
+                  else right_chara.src = right_image[6];
+                } else if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[7];
+                else if (maze[mydata.y][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[8];
+                else right_chara.src = right_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                right_chara.src = right_image[3];
+              else if (maze[mydata.y][mydata.x + 1] >= 1)
+                right_chara.src = right_image[4];
+              else right_chara.src = right_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y][mydata.x + 1]) right_chara.src = right_image[1];
+            else right_chara.src = right_image[0];
+          }
+
+          /*========================================/
+            |　　　　　　　　上方向左壁確認　　　　　　　|
+            /========================================*/
+          if (maze[mydata.y - 1][mydata.x] >= 1) {
+            if (maze[mydata.y - 2][mydata.x] >= 1) {
+              if (maze[mydata.y - 3][mydata.x] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y - 2][mydata.x - 1] >= 1) {
+                  if (maze[mydata.y][mydata.x - 1] >= 1)
+                    left_chara.src = left_image[14];
+                  else left_chara.src = left_image[11];
+                } else if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[12];
+                else if (maze[mydata.y][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[13];
+                else left_chara.src = left_image[10];
+              } else {
+                //3rd:2マス以上の深度あり
+                if (maze[mydata.y - 2][mydata.x - 1] >= 1) {
+                  if (maze[mydata.y][mydata.x - 1] >= 1)
+                    left_chara.src = left_image[9];
+                  else left_chara.src = left_image[6];
+                } else if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[7];
+                else if (maze[mydata.y][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[8];
+                else left_chara.src = left_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                left_chara.src = left_image[3];
+              else if (maze[mydata.y][mydata.x - 1] >= 1)
+                left_chara.src = left_image[4];
+              else left_chara.src = left_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y][mydata.x - 1] >= 1)
+              left_chara.src = left_image[1];
+            else left_chara.src = left_image[0];
+          }
+        }
+
+        if (way == 2) {
+          /*========================================/
+            |　　　　　　　　下方向右壁確認　　　　　　　|
+            /========================================*/
+          angle.src = "image/angleS.png";
+          if (maze[mydata.y + 1][mydata.x] >= 1) {
+            if (maze[mydata.y + 2][mydata.x] >= 1) {
+              if (maze[mydata.y + 3][mydata.x] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y + 2][mydata.x - 1] >= 1) {
+                  if (maze[mydata.y][mydata.x - 1] >= 1)
+                    right_chara.src = right_image[14];
+                  else right_chara.src = right_image[11];
+                } else if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[12];
+                else if (maze[mydata.y][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[13];
+                else right_chara.src = right_image[10];
+              } else {
+                //3rd:2マス以下の深度あり
+                if (maze[mydata.y + 2][mydata.x - 1] >= 1) {
+                  if (maze[mydata.y][mydata.x - 1] >= 1)
+                    right_chara.src = right_image[9];
+                  else right_chara.src = right_image[6];
+                } else if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[7];
+                else if (maze[mydata.y][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[8];
+                else right_chara.src = right_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                right_chara.src = right_image[3];
+              else if (maze[mydata.y][mydata.x - 1] >= 1)
+                right_chara.src = right_image[4];
+              else right_chara.src = right_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y][mydata.x - 1] >= 1)
+              right_chara.src = right_image[1];
+            else right_chara.src = right_image[0];
+          }
+
+          /*========================================/
+            |　　　　　　　　下方向左壁確認　　　　　　　|
+            /========================================*/
+          if (maze[mydata.y + 1][mydata.x] >= 1) {
+            if (maze[mydata.y + 2][mydata.x] >= 1) {
+              if (maze[mydata.y + 3][mydata.x] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y + 2][mydata.x + 1] >= 1) {
+                  if (maze[mydata.y][mydata.x + 1] >= 1)
+                    left_chara.src = left_image[14];
+                  else left_chara.src = left_image[11];
+                } else if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[12];
+                else if (maze[mydata.y][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[13];
+                else left_chara.src = left_image[10];
+              } else {
+                //3rd:2マス以上の深度あり
+                if (maze[mydata.y + 2][mydata.x + 1] >= 1) {
+                  if (maze[mydata.y][mydata.x + 1] >= 1)
+                    left_chara.src = left_image[9];
+                  else left_chara.src = left_image[6];
+                } else if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[7];
+                else if (maze[mydata.y][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[8];
+                else left_chara.src = left_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                left_chara.src = left_image[3];
+              else if (maze[mydata.y][mydata.x + 1] >= 1)
+                left_chara.src = left_image[4];
+              else left_chara.src = left_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y][mydata.x + 1] >= 1)
+              left_chara.src = left_image[1];
+            else left_chara.src = left_image[0];
+          }
+        }
+
+        if (way == 3) {
+          /*========================================/
+            |　　　　　　　　左方向右壁確認　　　　　　　|
+            /========================================*/
+          angle.src = "image/angleW.png";
+          if (maze[mydata.y][mydata.x - 1] >= 1) {
+            if (maze[mydata.y][mydata.x - 2] >= 1) {
+              if (maze[mydata.y][mydata.x - 3] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y - 1][mydata.x - 2] >= 1) {
+                  if (maze[mydata.y - 1][mydata.x] >= 1)
+                    right_chara.src = right_image[14];
+                  else right_chara.src = right_image[11];
+                } else if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[12];
+                else if (maze[mydata.y - 1][mydata.x] >= 1)
+                  right_chara.src = right_image[13];
+                else right_chara.src = right_image[10];
+              } else {
+                //3rd:2マス以下の深度あり
+                if (maze[mydata.y - 1][mydata.x - 2] >= 1) {
+                  if (maze[mydata.y - 1][mydata.x] >= 1)
+                    right_chara.src = right_image[9];
+                  else right_chara.src = right_image[6];
+                } else if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                  right_chara.src = right_image[7];
+                else if (maze[mydata.y - 1][mydata.x] >= 1)
+                  right_chara.src = right_image[8];
+                else right_chara.src = right_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y - 1][mydata.x - 1] >= 1)
+                right_chara.src = right_image[3];
+              else if (maze[mydata.y - 1][mydata.x] >= 1)
+                right_chara.src = right_image[4];
+              else right_chara.src = right_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y - 1][mydata.x] >= 1)
+              right_chara.src = right_image[1];
+            else right_chara.src = right_image[0];
+          }
+
+          /*========================================/
+            |　　　　　　　　左方向左壁確認　　　　　　　|
+            /========================================*/
+          if (maze[mydata.y][mydata.x - 1] >= 1) {
+            if (maze[mydata.y][mydata.x - 2] >= 1) {
+              if (maze[mydata.y][mydata.x - 3] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y + 1][mydata.x - 2] >= 1) {
+                  if (maze[mydata.y + 1][mydata.x] >= 1)
+                    left_chara.src = left_image[14];
+                  else left_chara.src = left_image[11];
+                } else if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[12];
+                else if (maze[mydata.y + 1][mydata.x] >= 1)
+                  left_chara.src = left_image[13];
+                else left_chara.src = left_image[10];
+              } else {
+                //3rd:2マス以下の深度あり
+                if (maze[mydata.y + 1][mydata.x - 2] >= 1) {
+                  if (maze[mydata.y + 1][mydata.x] >= 1)
+                    left_chara.src = left_image[9];
+                  else left_chara.src = left_image[6];
+                } else if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                  left_chara.src = left_image[7];
+                else if (maze[mydata.y + 1][mydata.x] >= 1)
+                  left_chara.src = left_image[8];
+                else left_chara.src = left_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y + 1][mydata.x - 1] >= 1)
+                left_chara.src = left_image[3];
+              else if (maze[mydata.y + 1][mydata.x] >= 1)
+                left_chara.src = left_image[4];
+              else left_chara.src = left_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y + 1][mydata.x] >= 1)
+              left_chara.src = left_image[1];
+            else left_chara.src = left_image[0];
+          }
+        }
+
+        if (way == 4) {
+          /*========================================/
+            |　　　　　　　　右方向右壁確認　　　　　　　|
+            /========================================*/
+          angle.src = "image/angleE.png";
+          if (maze[mydata.y][mydata.x + 1] >= 1) {
+            if (maze[mydata.y][mydata.x + 2] >= 1) {
+              if (maze[mydata.y][mydata.x + 3] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y + 1][mydata.x + 2] >= 1) {
+                  if (maze[mydata.y + 1][mydata.x] >= 1)
+                    right_chara.src = right_image[14];
+                  else right_chara.src = right_image[11];
+                } else if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[12];
+                else if (maze[mydata.y + 1][mydata.x] >= 1)
+                  right_chara.src = right_image[13];
+                else right_chara.src = right_image[10];
+              } else {
+                //3rd:2マス以下の深度あり
+                if (maze[mydata.y + 1][mydata.x + 2] >= 1) {
+                  if (maze[mydata.y + 1][mydata.x] >= 1)
+                    right_chara.src = right_image[9];
+                  else right_chara.src = right_image[6];
+                } else if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                  right_chara.src = right_image[7];
+                else if (maze[mydata.y + 1][mydata.x] >= 1)
+                  right_chara.src = right_image[8];
+                else right_chara.src = right_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y + 1][mydata.x + 1] >= 1)
+                right_chara.src = right_image[3];
+              else if (maze[mydata.y + 1][mydata.x] >= 1)
+                right_chara.src = right_image[4];
+              else right_chara.src = right_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y + 1][mydata.x] >= 1)
+              right_chara.src = right_image[1];
+            else right_chara.src = right_image[0];
+          }
+
+          /*========================================/
+            |　　　　　　　　右方向左壁確認　　　　　　　|
+            /========================================*/
+          if (maze[mydata.y][mydata.x + 1] >= 1) {
+            if (maze[mydata.y][mydata.x + 2] >= 1) {
+              if (maze[mydata.y][mydata.x + 3] >= 1) {
+                //none:3マス以上の深度あり
+                if (maze[mydata.y - 1][mydata.x + 2] >= 1) {
+                  if (maze[mydata.y - 1][mydata.x] >= 1)
+                    left_chara.src = left_image[14];
+                  else left_chara.src = left_image[11];
+                } else if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[12];
+                else if (maze[mydata.y - 1][mydata.x] >= 1)
+                  left_chara.src = left_image[13];
+                else left_chara.src = left_image[10];
+              } else {
+                //3rd:2マス以下の深度あり
+                if (maze[mydata.y - 1][mydata.x + 2] >= 1) {
+                  if (maze[mydata.y - 1][mydata.x] >= 1)
+                    left_chara.src = left_image[9];
+                  else left_chara.src = left_image[6];
+                } else if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                  left_chara.src = left_image[7];
+                else if (maze[mydata.y - 1][mydata.x] >= 1)
+                  left_chara.src = left_image[8];
+                else left_chara.src = left_image[5];
+              }
+            } else {
+              //2nd
+              if (maze[mydata.y - 1][mydata.x + 1] >= 1)
+                left_chara.src = left_image[3];
+              else if (maze[mydata.y - 1][mydata.x] >= 1)
+                left_chara.src = left_image[4];
+              else left_chara.src = left_image[2];
+            }
+          } else {
+            //1st
+            if (maze[mydata.y - 1][mydata.x] >= 1)
+              left_chara.src = left_image[1];
+            else left_chara.src = left_image[0];
+          }
+        }
+
+        const chara = new Image();
+        chara.src = "image/scope.png";
+        ctx.drawImage(left_chara, 0, 0);
+        ctx.drawImage(right_chara, 320, 0);
+        ctx.drawImage(chara, 0, 0);
+        ctx.drawImage(angle, 0, 0);
+      }
+
+      function veu() {
+        if (act == 1) {
+          ctx.clearRect(0, 0, 200, 200);
+          ctx.beginPath();
+          bac();
+
+          maze = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+            [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+            [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+            [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0],
+            [0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+            [0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0],
+            [0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0],
+            [0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          ];
+
+          for (var i = 0; i < item.length; i++) {
+            maze[item[i].y][item[i].x] = 4;
+          }
+          maze[mydata.y][mydata.x] = 2;
+          for (let i = 0; i < enemy.length; i++) {
+            maze[enemy[i].y][enemy[i].x] = 3;
+          }
+          //座標出力
+          for (let i = 0; i < maze.length; i++) {
+            for (let j = 0; j < maze[i].length; j++) {
+              //壁
+              if (maze[i][j] == 0) {
+                //色を指定する
+                ctx.strokeStyle = "rgb(255,255,255)"; //枠線の色は青
+                ctx.fillStyle = "rgb(255,255,255)"; //塗りつぶしの色は赤
+                // 四角を描く
+                ctx.fillRect(j * 10, i * 10, 10, 10);
+              }
+              //自機
+              if (maze[i][j] == 2) {
+                // 画像読み込み
+                const chara = new Image();
+                //色を指定する
+                ctx.strokeStyle = "rgb(00,00,00)"; //枠線の色は青
+                ctx.fillStyle = "rgb(00,255,00)"; //塗りつぶしの色は赤
+                // 四角を描く
+                //ctx.fillRect(j * 10, i * 10, 10, 10);
+                if (way == 1) {
+                  chara.src = "image/charaimage/player_up.png";
+                } else if (way == 2) {
+                  chara.src = "image/charaimage/player_down.png";
+                } else if (way == 3) {
+                  chara.src = "image/charaimage/player_left.png";
+                } else if (way == 4) {
+                  chara.src = "image/charaimage/player_right.png";
+                } else {
+                  ctx.fillRect(j * 10, i * 10, 10, 10);
+                  console.log(way);
+                }
+                //画像の描画
+                ctx.drawImage(chara, j * 10, i * 10);
+              }
+
+              //以下他プレーヤー
+              if (item_get == 1) {
+                if (maze[i][j] == 3) {
+                  //色を指定する
+                  ctx.strokeStyle = "rgb(00,00,00)"; //枠線の色は青
+                  ctx.fillStyle = "rgb(00,00,255)"; //塗りつぶしの色は赤
+                  // 四角を描く
+                  ctx.fillRect(j * 10, i * 10, 10, 10);
+                }
+              }
+              if (maze[i][j] == 4) {
+                //色を指定する
+                ctx.strokeStyle = "rgb(00,00,00)"; //枠線の色は青
+                ctx.fillStyle = "rgb(00,255,255)"; //塗りつぶしの色は赤
+                // 四角を描く
+                ctx.fillRect(j * 10, i * 10, 10, 10);
+              }
+            }
+          }
+          ctx.beginPath();
+          ctx.font = "bold 15px Arial, meiryo, sans-serif";
+          ctx.fillStyle = "rgba( 181, 230, 29, 0.8 )";
+          ctx.fillText(mydata.time + "sec", 600, 20, 200, 100);
+
+          ctx.beginPath();
+          ctx.font = "bold 15px Arial, meiryo, sans-serif";
+          ctx.fillStyle = "rgba( 181, 230, 29, 0.8 )";
+          let min = 40;
+          for (var i = 0; i < enemy.length; i++) {
+            if (
+              min >
+              Math.sqrt(
+                Math.pow(enemy[i].x - mydata.x, 2) +
+                  Math.pow(enemy[i].y - mydata.y, 2)
+              )
+            ) {
+              min = parseInt(
+                Math.sqrt(
+                  Math.pow(enemy[i].x - mydata.x, 2) +
+                    Math.pow(enemy[i].y - mydata.y, 2)
+                )
+              );
+            }
+          }
+          let text = "";
+          if (min > 5) {
+            text = "最短敵距離" + min + "マス";
+          } else {
+            text = "敵接近中！";
+          }
+          ctx.fillText(text, 10, 230, 200, 100);
+
+          if (item_get == 1) {
+            ctx.beginPath();
+            ctx.font = "bold 15px Arial, meiryo, sans-serif";
+            ctx.fillStyle = "rgba( 181, 230, 29, 0.8 )";
+            ctx.fillText("アイテムゲット：敵可視化中", 10, 245, 200, 100);
+          }
+        } else if (act == 2) {
+          clearInterval(update);
+          clearInterval(time_count);
+          // 画像読み込み
+          const chara = new Image();
+          chara.src = "image/GAMEOVER.png"; // 画像のURLを指定
+          ctx.drawImage(chara, 0, 0);
+        } else if (act == 3) {
+          clearInterval(update);
+          clearInterval(time_count);
+          // 画像読み込み
+          const chara = new Image();
+          chara.src = "image/VICTORY.png"; // 画像のURLを指定
+          ctx.drawImage(chara, 0, 0);
+        } else {
+        }
+      }
+    
+      function shot_veu(){
+if(shot_moshon=0){
+  const chara= new Image();
+  chara.src = shot_image[shot_moshon];
+  ctx.drawImage(chara, 0, 0);
+  shot_moshon++;
+      }
+    }
+    </script>
+  </body>
 </html>

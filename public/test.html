@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>DOMで動的にボタンを作る</title>
+    <style>
+      /* クリックしたボタンを非表示にし、擬似的に削除した風にする */
+
+    </style>
+  </head>
+  <body>
+    <button id="bCreate" onclick="fal()">押してpを生成</button>
+    <div id="hoge">hoge</div>
+    <script type="text/javascript">
+var ping = require('ping');
+ 
+ var hosts = ['192.168.1.1', 'google.com', 'yahoo.com'];
+  
+ for(let host of hosts){
+      // WARNING: -i 2 argument may not work in other platform like window
+     let res = await ping.promise.probe(host, {
+            timeout: 10,
+            extra: ['-i', '2'],
+        });
+     console.log(res);
+ }
+  
+    </script>
+  </body>
+</html>
